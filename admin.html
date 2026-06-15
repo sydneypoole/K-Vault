@@ -817,17 +817,36 @@
     <el-container>
       <el-header>
         <div class="header-content">
-          <span class="home-btn" @click="goHome"><i class="fas fa-home"></i></span>
-          <span class="title" @click="refreshDashboard">管理后台</span>
-          <div class="search-card"><el-input v-model="search" size="mini" placeholder="输入关键字搜索"></el-input></div>
-          <span class="stats" role="status" aria-live="polite">
-            <i class="fas fa-chart-line stats-icon"></i>
-            <span class="stats-text">总记录: {{ totalCount || Number }}</span>
-            <small class="stats-loaded">已加载 {{ Number }}</small>
-          </span>
+          <div class="admin-brand" @click="refreshDashboard">
+            <button class="brand-home" type="button" @click.stop="goHome" aria-label="返回首页">
+              <img src="/logo.png" alt="J-OSS">
+            </button>
+            <div class="brand-copy">
+              <div class="brand-title">管理后台</div>
+              <div class="brand-subtitle">文件、目录与存储统一管理</div>
+            </div>
+          </div>
+          <div class="search-card">
+            <el-input v-model="search" size="mini" placeholder="输入关键字搜索" clearable>
+              <i slot="prefix" class="el-input__icon el-icon-search"></i>
+            </el-input>
+          </div>
+          <div class="header-stats" role="status" aria-live="polite">
+            <span class="stat-pill">
+              <i class="fas fa-folder-open"></i>
+              <span>总记录 {{ totalCount || Number }}</span>
+            </span>
+            <span class="stat-pill">
+              <i class="fas fa-layer-group"></i>
+              <span>已加载 {{ Number }}</span>
+            </span>
+          </div>
           <div class="actions">
             <el-dropdown @command="switchFileType" :hide-on-click="false">
-              <span class="el-dropdown-link"><i :class="fileTypeIcon"></i></span>
+              <button class="header-action-btn" type="button">
+                <i :class="fileTypeIcon"></i> 类型
+                <i class="el-icon-arrow-down"></i>
+              </button>
               <el-dropdown-menu slot="dropdown">
                 <el-dropdown-item command="all" :class="{ 'el-dropdown-menu__item--selected': fileType === 'all' }"><i class="fas fa-th-large"></i> 全部</el-dropdown-item>
                 <el-dropdown-item command="image" :class="{ 'el-dropdown-menu__item--selected': fileType === 'image' }"><i :class="fileConfig.image.icon"></i> 图片</el-dropdown-item>
@@ -837,7 +856,10 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="switchStorageFilter" :hide-on-click="false">
-              <span class="el-dropdown-link"><i :class="storageFilterIcon"></i></span>
+              <button class="header-action-btn" type="button">
+                <i :class="storageFilterIcon"></i> 存储
+                <i class="el-icon-arrow-down"></i>
+              </button>
               <el-dropdown-menu slot="dropdown">
                 <el-dropdown-item command="all" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'all' }"><i class="fas fa-database"></i> 全部存储</el-dropdown-item>
                 <el-dropdown-item command="telegram" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'telegram' }"><i class="fab fa-telegram"></i> Telegram</el-dropdown-item>
@@ -850,7 +872,10 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="sort" :hide-on-click="false">
-              <span class="el-dropdown-link"><i :class="sortIcon"></i></span>
+              <button class="header-action-btn" type="button">
+                <i :class="sortIcon"></i> 排序
+                <i class="el-icon-arrow-down"></i>
+              </button>
               <el-dropdown-menu slot="dropdown">
                 <el-dropdown-item command="dateDesc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'dateDesc' }"><i class="fas fa-sort-amount-down"></i> 按时间倒序</el-dropdown-item>
                 <el-dropdown-item command="nameAsc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'nameAsc' }"><i class="fas fa-sort-alpha-up"></i> 按名称升序</el-dropdown-item>
@@ -858,7 +883,10 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="filter" :hide-on-click="false">
-              <span class="el-dropdown-link"><i :class="filterIcon"></i></span>
+              <button class="header-action-btn" type="button">
+                <i :class="filterIcon"></i> 筛选
+                <i class="el-icon-arrow-down"></i>
+              </button>
               <el-dropdown-menu slot="dropdown">
                 <el-dropdown-item command="all" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'all' }"><i class="fas fa-filter"></i> 全部</el-dropdown-item>
                 <el-dropdown-item command="favorites" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'favorites' }"><i class="fas fa-bookmark"></i> 收藏</el-dropdown-item>
@@ -868,14 +896,20 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="switchViewMode" :hide-on-click="false">
-              <span class="el-dropdown-link"><i :class="viewModeIcon"></i></span>
+              <button class="header-action-btn" type="button">
+                <i :class="viewModeIcon"></i> 视图
+                <i class="el-icon-arrow-down"></i>
+              </button>
               <el-dropdown-menu slot="dropdown">
                 <el-dropdown-item command="grid" :class="{ 'el-dropdown-menu__item--selected': viewMode === 'grid' }"><i class="fas fa-th-large"></i> 平铺视图</el-dropdown-item>
                 <el-dropdown-item command="list" :class="{ 'el-dropdown-menu__item--selected': viewMode === 'list' }"><i class="fas fa-list"></i> 详细视图</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="handleBatchOperation" :hide-on-click="false">
-              <span class="el-dropdown-link"><i class="fas fa-tasks"></i></span>
+              <button class="header-action-btn" type="button">
+                <i class="fas fa-tasks"></i> 批量
+                <i class="el-icon-arrow-down"></i>
+              </button>
               <el-dropdown-menu slot="dropdown">
                 <el-dropdown-item command="selectAll"><i class="fas fa-check-double"></i> {{ isAllSelected ? '取消全选' : '全选当前页' }}</el-dropdown-item>
                 <el-dropdown-item command="selectAllLoaded"><i class="fas fa-check-square"></i> 全选已加载 ({{ tableData.length }})</el-dropdown-item>
@@ -890,7 +924,10 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="handleWebsite">
-              <span class="el-dropdown-link"><i class="fas fa-external-link-alt"></i></span>
+              <button class="header-action-btn" type="button">
+                <i class="fas fa-external-link-alt"></i> 快捷
+                <i class="el-icon-arrow-down"></i>
+              </button>
               <el-dropdown-menu slot="dropdown">
                 <template v-for="site in quickWebsites">
                   <el-dropdown-item :command="site.url">
@@ -900,7 +937,10 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="handleToolkit" :hide-on-click="false">
-              <span class="el-dropdown-link"><i class="fas fa-toolbox"></i></span>
+              <button class="header-action-btn" type="button">
+                <i class="fas fa-toolbox"></i> 工具
+                <i class="el-icon-arrow-down"></i>
+              </button>
               <el-dropdown-menu slot="dropdown">
                 <el-dropdown-item command="selectAllInPage"><i class="fas fa-check-square"></i> 全选当前页</el-dropdown-item>
                 <el-dropdown-item command="checkBrokenFiles"><i class="fas fa-wrench"></i> 检测失效文件</el-dropdown-item>
@@ -911,7 +951,7 @@
                 <el-dropdown-item command="checkStatus" divided><i class="fas fa-heartbeat"></i> 检查连接状态</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
-            <div class="status-panel" @click="checkConnectionStatus">
+            <div class="status-panel" @click="checkConnectionStatus" role="button" aria-label="检查连接状态">
               <div class="status-item">
                 <i class="fas fa-circle" :style="{ color: systemStatus.telegram.connected ? '#67c23a' : '#f56c6c' }"></i>
                 <span>TG</span>
@@ -942,7 +982,9 @@
               </div>
             </div>
             <el-dropdown @command="handleLoadSettings" :hide-on-click="false">
-              <span class="el-dropdown-link"><i class="fas fa-cog"></i></span>
+              <button class="header-icon-btn" type="button" aria-label="界面设置">
+                <i class="fas fa-cog"></i>
+              </button>
               <el-dropdown-menu slot="dropdown">
                 <el-dropdown-item command="normal" :class="{ 'el-dropdown-menu__item--selected': loadMode === 'normal' }"><i class="fas fa-eye"></i> 正常模式</el-dropdown-item>
                 <el-dropdown-item command="dataSaver" :class="{ 'el-dropdown-menu__item--selected': loadMode === 'dataSaver' }"><i class="fas fa-bolt"></i> 省流模式</el-dropdown-item>
@@ -951,8 +993,10 @@
                 <el-dropdown-item command="uiDesign" divided><i class="fas fa-sliders-h"></i> 前端 UI 设计</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
-            <el-tooltip content="前端 UI 设计" placement="bottom"><i class="fas fa-sliders-h" @click="showUiDesignSettingsPanel"></i></el-tooltip>
-            <i class="fas fa-sign-out-alt" @click="handleLogout"></i>
+            <el-tooltip content="前端 UI 设计" placement="bottom"><button class="header-icon-btn" type="button" @click="showUiDesignSettingsPanel"><i class="fas fa-sliders-h"></i></button></el-tooltip>
+            <button class="header-icon-btn is-danger" type="button" @click="handleLogout" aria-label="退出登录">
+              <i class="fas fa-sign-out-alt"></i>
+            </button>
           </div>
         </div>
       </el-header>
