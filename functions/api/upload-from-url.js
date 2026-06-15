@@ -118,7 +118,7 @@ async function fetchRemote(url) {
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "Mozilla/5.0 K-Vault URL Uploader",
+        "User-Agent": "Mozilla/5.0 J-OSS URL Uploader",
         Accept: "image/*,video/*,audio/*,application/*,*/*",
       },
     });

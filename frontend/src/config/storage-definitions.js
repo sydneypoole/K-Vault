@@ -116,7 +116,7 @@ export const STORAGE_GROUPS = [
   {
     value: 'direct',
     label: 'Direct Upload Backends',
-    description: 'These backends are uploaded directly by K-Vault.',
+    description: 'These backends are uploaded directly by J-OSS.',
   },
   {
     value: 'mounted',

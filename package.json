@@ -1,6 +1,6 @@
 {
   "name": "k-vault",
-  "description": "K-Vault - Free File Hosting Service based on Telegram",
+  "description": "J-OSS - Free File Hosting Service based on Telegram",
   "version": "1.0.0",
   "scripts": {
     "build": "npm run frontend:build ",

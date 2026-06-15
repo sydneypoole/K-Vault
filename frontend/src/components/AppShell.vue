@@ -2,10 +2,10 @@
   <div class="app-shell">
     <div class="app-bg">
       <header class="topbar card">
-        <router-link to="/upload" class="brand-group" aria-label="K-Vault home">
+        <router-link to="/upload" class="brand-group" aria-label="J-OSS home">
           <span class="brand-mark" aria-hidden="true">KV</span>
           <div class="brand-copy">
-            <h1>K-Vault</h1>
+            <h1>J-OSS</h1>
             <p>Docker + Cloudflare object relay</p>
           </div>
         </router-link>

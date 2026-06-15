@@ -1,4 +1,4 @@
-# K-Vault Docker 运行指南（中文）
+# J-OSS Docker 运行指南（中文）
 
 English version: [README-DOCKER-EN.md](README-DOCKER-EN.md)
 
@@ -159,9 +159,9 @@ curl -i -X POST "http://localhost:8080/api/auth/login" \
 
 为降低多网盘适配维护成本，推荐：
 
-1. K-Vault 负责上传体验、直链与后台管理
+1. J-OSS 负责上传体验、直链与后台管理
 2. alist/openlist 负责上游多盘聚合
-3. K-Vault 通过 WebDAV 作为挂载入口接入聚合层
+3. J-OSS 通过 WebDAV 作为挂载入口接入聚合层
 
 优势：
 

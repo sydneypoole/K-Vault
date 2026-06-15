@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="logo.png" alt="K-Vault Logo" width="140">
+<img src="logo.png" alt="J-OSS Logo" width="140">
 
-# K-Vault
+# J-OSS
 
 > 免费图片/文件托管解决方案，支持 Cloudflare Pages + Docker 双模部署，并兼容多种存储后端
 
@@ -10,9 +10,9 @@
 
 <br>
 
-![GitHub stars](https://img.shields.io/github/stars/katelya77/K-Vault?style=flat-square)
-![GitHub forks](https://img.shields.io/github/forks/katelya77/K-Vault?style=flat-square)
-![GitHub license](https://img.shields.io/github/license/katelya77/K-Vault?style=flat-square)
+![GitHub stars](https://img.shields.io/github/stars/katelya77/J-OSS?style=flat-square)
+![GitHub forks](https://img.shields.io/github/forks/katelya77/J-OSS?style=flat-square)
+![GitHub license](https://img.shields.io/github/license/katelya77/J-OSS?style=flat-square)
 
 </div>
 
@@ -717,7 +717,7 @@ kvault() {
 - [Docker 镜像工作流](.github/workflows/docker-image.yml)
 - [Telegram Bot API](https://core.telegram.org/bots/api)
 - [Telegram Bot API Server（自部署）](https://github.com/tdlib/telegram-bot-api)
-- [问题反馈](https://github.com/katelya77/K-Vault/issues)
+- [问题反馈](https://github.com/katelya77/J-OSS/issues)
 
 ---
 
@@ -737,4 +737,4 @@ MIT License
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=katelya77/K-Vault&type=Date)](https://star-history.com/#katelya77/K-Vault&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=katelya77/J-OSS&type=Date)](https://star-history.com/#katelya77/J-OSS&Date)

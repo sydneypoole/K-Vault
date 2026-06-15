@@ -1,4 +1,4 @@
-# K-Vault Docker Runtime Guide
+# J-OSS Docker Runtime Guide
 
 Chinese version: [README-DOCKER.md](README-DOCKER.md)
 
@@ -150,24 +150,24 @@ If the R2 binding blocks Pages Functions deployment with `invalid jurisdiction`,
 
 To reduce long-term adapter maintenance, recommended production pattern:
 
-1. K-Vault focuses on:
+1. J-OSS focuses on:
    - Drive UX
    - direct/share links
    - auth/audit/metadata
 2. alist/openlist focuses on:
    - multi-provider aggregation
    - upstream mount/credential complexity
-3. K-Vault connects to alist/openlist through WebDAV adapter as a mounted backend.
+3. J-OSS connects to alist/openlist through WebDAV adapter as a mounted backend.
 
 Suggested deployment:
 
-- Same VPS Docker host (simplest): deploy alist/openlist alongside K-Vault
-- Or independent node: expose WebDAV endpoint securely and connect from K-Vault WebDAV profile
+- Same VPS Docker host (simplest): deploy alist/openlist alongside J-OSS
+- Or independent node: expose WebDAV endpoint securely and connect from J-OSS WebDAV profile
 
 Failure isolation:
 
 - If aggregation layer is unavailable, only that WebDAV profile is unavailable
-- K-Vault site and other storage profiles continue to work
+- J-OSS site and other storage profiles continue to work
 - `/api/status` and Drive adapter cards show degraded state explicitly
 
 ## Networking Notes
@@ -361,7 +361,7 @@ The script covers:
 
 - Not recommended for current Docker runtime architecture.
 - Main blockers are runtime and persistence model mismatch.
-  - Serverless function request body limit (4.5MB) conflicts with K-Vault upload flow.
+  - Serverless function request body limit (4.5MB) conflicts with J-OSS upload flow.
   - Function file system is read-only except temporary `/tmp`, which does not fit persistent SQLite + chunk files.
 - If deploying to Vercel, only static frontend hosting is practical without major backend refactor.
 

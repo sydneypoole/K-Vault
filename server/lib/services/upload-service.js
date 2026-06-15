@@ -92,7 +92,7 @@ class UploadService {
       response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          'User-Agent': 'K-Vault/2.0 (+https://github.com/katelya77/K-Vault)',
+          'User-Agent': 'J-OSS/2.0 (+https://github.com/katelya77/J-OSS)',
           Accept: '*/*',
         },
       });
