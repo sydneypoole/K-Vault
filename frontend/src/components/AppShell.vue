@@ -1,43 +1,49 @@
 <template>
-  <div class="app-bg">
-    <header class="topbar card">
-      <div class="brand-group">
-        <span class="brand-dot"></span>
-        <div>
-          <h1>K-Vault</h1>
-          <p>Docker + Cloudflare dual-mode runtime</p>
-        </div>
-      </div>
-      <nav class="nav-row">
-        <router-link class="nav-link" to="/upload">Upload</router-link>
-        <router-link class="nav-link" to="/drive">Drive</router-link>
-        <router-link class="nav-link" to="/storage">Storage</router-link>
-        <router-link class="nav-link" to="/status">Status</router-link>
-        <a class="nav-link" href="/legacy/index.html" target="_blank" rel="noopener">Legacy</a>
-      </nav>
-      <div class="toolbar">
-        <router-link
-          v-if="authStore.authRequired && !authStore.authenticated"
-          class="btn btn-ghost"
-          to="/login"
-        >
-          Login
+  <div class="app-shell">
+    <div class="app-bg">
+      <header class="topbar card">
+        <router-link to="/upload" class="brand-group" aria-label="K-Vault home">
+          <span class="brand-mark" aria-hidden="true">KV</span>
+          <div class="brand-copy">
+            <h1>K-Vault</h1>
+            <p>Docker + Cloudflare object relay</p>
+          </div>
         </router-link>
-        <button v-if="authStore.authenticated" class="btn btn-ghost" @click="handleLogout">Logout</button>
-      </div>
-    </header>
 
-    <section v-if="authStore.guestMode" class="guest-note card">
-      <strong>Guest mode enabled.</strong>
-      <span>
-        Max file size: {{ formatSize(authStore.guestUpload.maxFileSize) }},
-        daily limit: {{ authStore.guestUpload.dailyLimit }} uploads.
-      </span>
-    </section>
+        <nav class="nav-row" aria-label="主导航">
+          <router-link class="nav-link" to="/upload">Upload</router-link>
+          <router-link class="nav-link" to="/drive">Drive</router-link>
+          <router-link class="nav-link" to="/storage">Storage</router-link>
+          <router-link class="nav-link" to="/status">Status</router-link>
+          <a class="nav-link" href="/legacy/index.html" target="_blank" rel="noopener">Legacy</a>
+        </nav>
 
-    <main class="page-wrap">
-      <router-view />
-    </main>
+        <div class="topbar-actions">
+          <router-link
+            v-if="authStore.authRequired && !authStore.authenticated"
+            class="btn btn-ghost"
+            to="/login"
+          >
+            Login
+          </router-link>
+          <button v-if="authStore.authenticated" class="btn btn-ghost" @click="handleLogout">
+            Logout
+          </button>
+        </div>
+      </header>
+
+      <section v-if="authStore.guestMode" class="guest-note card">
+        <strong>Guest mode enabled.</strong>
+        <span>
+          Max file size: {{ formatSize(authStore.guestUpload.maxFileSize) }},
+          daily limit: {{ authStore.guestUpload.dailyLimit }} uploads.
+        </span>
+      </section>
+
+      <main class="page-wrap">
+        <router-view />
+      </main>
+    </div>
   </div>
 </template>
 

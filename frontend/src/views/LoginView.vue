@@ -1,8 +1,10 @@
 <template>
   <div class="app-bg login-page">
     <section class="card login-card">
-      <h1>Sign In</h1>
-      <p class="muted">Use BASIC_USER/BASIC_PASS configured on the backend.</p>
+      <div class="login-head">
+        <h1>Sign In</h1>
+        <p class="muted">Sign in with BASIC_USER / BASIC_PASS configured on the backend.</p>
+      </div>
 
       <form class="form-grid" @submit.prevent="submit">
         <label>
@@ -19,10 +21,13 @@
       </form>
 
       <p v-if="error" class="error">{{ error }}</p>
-      <p class="muted link-row">
-        Need the old page?
-        <a href="/login.html" target="_blank" rel="noopener">Open legacy login</a>
-      </p>
+
+      <div class="login-footer-note">
+        <p class="muted link-row">
+          Need the old page?
+          <a href="/login.html" target="_blank" rel="noopener">Open legacy login</a>
+        </p>
+      </div>
     </section>
   </div>
 </template>
