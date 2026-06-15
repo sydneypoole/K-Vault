@@ -10,7 +10,6 @@
   <link rel="stylesheet" href="/theme.css">
   <script src="/theme.js?v=20260305"></script>
   <!-- Import CSS -->
-  <link rel="stylesheet" href="./admin-imgtc.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
   <script src="https://js.sentry-cdn.com/219f636ac7bde5edab2c3e16885cb535.min.js" crossorigin="anonymous"></script>
@@ -810,40 +809,44 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="/mobile-refactor.css">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=20260615">
+  <link rel="stylesheet" href="./admin-imgtc.css?v=20260615-header4">
 </head>
 <body>
   <div id="app" v-cloak>
     <el-container>
       <el-header>
-        <div class="header-content">
-          <div class="admin-brand" @click="refreshDashboard">
-            <button class="brand-home" type="button" @click.stop="goHome" aria-label="返回首页">
-              <img src="/logo.png" alt="J-OSS">
+        <div class="header-content admin-header">
+          <div class="admin-header__top">
+          <div class="admin-header__brand" @click="refreshDashboard">
+            <button class="admin-header__home" type="button" @click.stop="goHome" aria-label="返回首页">
+              <img class="admin-header__logo" src="/logo.png" alt="J-OSS">
             </button>
-            <div class="brand-copy">
-              <div class="brand-title">管理后台</div>
-              <div class="brand-subtitle">文件、目录与存储统一管理</div>
+            <div class="admin-header__brand-copy">
+              <div class="admin-header__title">管理后台</div>
+              <div class="admin-header__subtitle">文件、目录与存储统一管理</div>
             </div>
           </div>
-          <div class="search-card">
+          <div class="admin-header__search">
             <el-input v-model="search" size="mini" placeholder="输入关键字搜索" clearable>
               <i slot="prefix" class="el-input__icon el-icon-search"></i>
             </el-input>
           </div>
-          <div class="header-stats" role="status" aria-live="polite">
-            <span class="stat-pill">
+          <div class="admin-header__stats" role="status" aria-live="polite">
+            <span class="admin-header__stat">
               <i class="fas fa-folder-open"></i>
               <span>总记录 {{ totalCount || Number }}</span>
             </span>
-            <span class="stat-pill">
+            <span class="admin-header__stat">
               <i class="fas fa-layer-group"></i>
               <span>已加载 {{ Number }}</span>
             </span>
           </div>
-          <div class="actions">
+          </div>
+          <div class="admin-header__controls">
+          <div class="admin-header__action-row">
             <el-dropdown @command="switchFileType" :hide-on-click="false">
-              <button class="header-action-btn" type="button">
+              <button class="admin-header__action" type="button">
                 <i :class="fileTypeIcon"></i> 类型
                 <i class="el-icon-arrow-down"></i>
               </button>
@@ -856,7 +859,7 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="switchStorageFilter" :hide-on-click="false">
-              <button class="header-action-btn" type="button">
+              <button class="admin-header__action" type="button">
                 <i :class="storageFilterIcon"></i> 存储
                 <i class="el-icon-arrow-down"></i>
               </button>
@@ -872,7 +875,7 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="sort" :hide-on-click="false">
-              <button class="header-action-btn" type="button">
+              <button class="admin-header__action" type="button">
                 <i :class="sortIcon"></i> 排序
                 <i class="el-icon-arrow-down"></i>
               </button>
@@ -883,7 +886,7 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="filter" :hide-on-click="false">
-              <button class="header-action-btn" type="button">
+              <button class="admin-header__action" type="button">
                 <i :class="filterIcon"></i> 筛选
                 <i class="el-icon-arrow-down"></i>
               </button>
@@ -896,7 +899,7 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="switchViewMode" :hide-on-click="false">
-              <button class="header-action-btn" type="button">
+              <button class="admin-header__action" type="button">
                 <i :class="viewModeIcon"></i> 视图
                 <i class="el-icon-arrow-down"></i>
               </button>
@@ -906,7 +909,7 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="handleBatchOperation" :hide-on-click="false">
-              <button class="header-action-btn" type="button">
+              <button class="admin-header__action" type="button">
                 <i class="fas fa-tasks"></i> 批量
                 <i class="el-icon-arrow-down"></i>
               </button>
@@ -924,7 +927,7 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="handleWebsite">
-              <button class="header-action-btn" type="button">
+              <button class="admin-header__action" type="button">
                 <i class="fas fa-external-link-alt"></i> 快捷
                 <i class="el-icon-arrow-down"></i>
               </button>
@@ -937,7 +940,7 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="handleToolkit" :hide-on-click="false">
-              <button class="header-action-btn" type="button">
+              <button class="admin-header__action" type="button">
                 <i class="fas fa-toolbox"></i> 工具
                 <i class="el-icon-arrow-down"></i>
               </button>
@@ -951,38 +954,44 @@
                 <el-dropdown-item command="checkStatus" divided><i class="fas fa-heartbeat"></i> 检查连接状态</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
-            <div class="status-panel" @click="checkConnectionStatus" role="button" aria-label="检查连接状态">
-              <div class="status-item">
+          </div>
+          <div class="admin-header__utility-row">
+            <div class="admin-header__status" @click="checkConnectionStatus" role="button" aria-label="检查连接状态">
+              <div class="admin-header__status-item">
                 <i class="fas fa-circle" :style="{ color: systemStatus.telegram.connected ? '#67c23a' : '#f56c6c' }"></i>
                 <span>TG</span>
               </div>
-              <div class="status-item">
+              <div class="admin-header__status-item">
                 <i class="fas fa-circle" :style="{ color: systemStatus.kv.connected ? '#67c23a' : '#f56c6c' }"></i>
                 <span>KV</span>
               </div>
-              <div class="status-item">
+              <div class="admin-header__status-item">
                 <i class="fas fa-circle" :style="{ color: systemStatus.r2.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.r2) ? '#909399' : '#f56c6c') }"></i>
                 <span>R2</span>
               </div>
-              <div class="status-item">
+              <div class="admin-header__status-item">
                 <i class="fas fa-circle" :style="{ color: systemStatus.s3.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.s3) ? '#909399' : '#f56c6c') }"></i>
                 <span>S3</span>
               </div>
-              <div class="status-item">
+              <div class="admin-header__status-item">
                 <i class="fas fa-circle" :style="{ color: systemStatus.discord.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.discord) ? '#909399' : '#f56c6c') }"></i>
                 <span>DC</span>
               </div>
-              <div class="status-item">
+              <div class="admin-header__status-item">
                 <i class="fas fa-circle" :style="{ color: systemStatus.huggingface.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.huggingface) ? '#909399' : '#f56c6c') }"></i>
                 <span>HF</span>
               </div>
-              <div class="status-item">
+              <div class="admin-header__status-item">
                 <i class="fas fa-circle" :style="{ color: systemStatus.github.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.github) ? '#909399' : '#f56c6c') }"></i>
                 <span>GH</span>
               </div>
             </div>
+            <button class="admin-header__icon-btn admin-header__theme-btn" type="button" data-theme-toggle aria-label="切换到夜间模式">
+              <i class="fas fa-moon" data-theme-icon></i>
+              <span data-theme-label>夜间</span>
+            </button>
             <el-dropdown @command="handleLoadSettings" :hide-on-click="false">
-              <button class="header-icon-btn" type="button" aria-label="界面设置">
+              <button class="admin-header__icon-btn" type="button" aria-label="界面设置">
                 <i class="fas fa-cog"></i>
               </button>
               <el-dropdown-menu slot="dropdown">
@@ -993,10 +1002,11 @@
                 <el-dropdown-item command="uiDesign" divided><i class="fas fa-sliders-h"></i> 前端 UI 设计</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
-            <el-tooltip content="前端 UI 设计" placement="bottom"><button class="header-icon-btn" type="button" @click="showUiDesignSettingsPanel"><i class="fas fa-sliders-h"></i></button></el-tooltip>
-            <button class="header-icon-btn is-danger" type="button" @click="handleLogout" aria-label="退出登录">
+            <el-tooltip content="前端 UI 设计" placement="bottom"><button class="admin-header__icon-btn" type="button" @click="showUiDesignSettingsPanel"><i class="fas fa-sliders-h"></i></button></el-tooltip>
+            <button class="admin-header__icon-btn is-danger" type="button" @click="handleLogout" aria-label="退出登录">
               <i class="fas fa-sign-out-alt"></i>
             </button>
+          </div>
           </div>
         </div>
       </el-header>
