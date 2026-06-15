@@ -340,7 +340,7 @@ async function uploadToTelegram(file, env) {
     });
     const data = await response.json();
 
-    if (!response.ok || !data.ok) {
+    if (!response.ok || data?.ok === false || !data?.result) {
       if (apiEndpoint === 'sendPhoto' || apiEndpoint === 'sendAudio') {
         const docFormData = new FormData();
         docFormData.append('chat_id', env.TG_Chat_ID);
@@ -351,7 +351,7 @@ async function uploadToTelegram(file, env) {
           body: docFormData,
         });
         const docData = await docResponse.json();
-        if (docResponse.ok && docData.ok) {
+        if (docResponse.ok && docData?.ok !== false && docData?.result) {
           const fileId = pickTelegramFileId(docData);
           if (!fileId) return { success: false, error: 'Failed to get Telegram file ID' };
           return {

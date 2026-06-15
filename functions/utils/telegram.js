@@ -71,7 +71,7 @@ export function getTelegramUploadMethodAndField(contentType = "") {
 }
 
 export function pickTelegramFileId(responseData) {
-  if (!responseData?.ok || !responseData.result) return null;
+  if (!responseData?.result || responseData.ok === false) return null;
   const result = responseData.result;
   if (Array.isArray(result.photo) && result.photo.length) {
     return result.photo.reduce((prev, current) =>
@@ -83,7 +83,9 @@ export function pickTelegramFileId(responseData) {
   if (result.audio?.file_id) return result.audio.file_id;
   if (result.voice?.file_id) return result.voice.file_id;
   if (result.animation?.file_id) return result.animation.file_id;
+  if (result.sticker?.file_id) return result.sticker.file_id;
   if (result.video_note?.file_id) return result.video_note.file_id;
+  if (result.file_id) return result.file_id;
   return null;
 }
 

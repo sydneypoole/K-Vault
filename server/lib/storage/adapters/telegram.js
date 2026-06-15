@@ -39,7 +39,15 @@ function pickFileId(result) {
   if (result.video?.file_id) return result.video.file_id;
   if (result.audio?.file_id) return result.audio.file_id;
   if (result.voice?.file_id) return result.voice.file_id;
+  if (result.animation?.file_id) return result.animation.file_id;
+  if (result.sticker?.file_id) return result.sticker.file_id;
+  if (result.video_note?.file_id) return result.video_note.file_id;
+  if (result.file_id) return result.file_id;
   return null;
+}
+
+function isTelegramUploadSuccess(response, json) {
+  return Boolean(response?.ok && json?.ok !== false && json?.result);
 }
 
 class TelegramStorageAdapter {
@@ -101,7 +109,7 @@ class TelegramStorageAdapter {
     let json = await response.json().catch(() => ({}));
 
     // Fallback photo/audio to document when Telegram media type checks reject.
-    if ((!response.ok || !json.ok) && (method === 'sendPhoto' || method === 'sendAudio')) {
+    if (!isTelegramUploadSuccess(response, json) && (method === 'sendPhoto' || method === 'sendAudio')) {
       const fallbackForm = new FormData();
       fallbackForm.append('chat_id', this.config.chatId);
       fallbackForm.append('document', new File([buffer], normalizedName, { type: mimeType || 'application/octet-stream' }));
@@ -112,7 +120,7 @@ class TelegramStorageAdapter {
       json = await response.json().catch(() => ({}));
     }
 
-    if (!response.ok || !json.ok) {
+    if (!isTelegramUploadSuccess(response, json)) {
       throw new Error(json.description || `Telegram upload failed (${response.status})`);
     }
 

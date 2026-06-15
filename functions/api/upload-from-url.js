@@ -282,7 +282,7 @@ async function uploadToTelegram(arrayBuffer, fileName, fileExtension, contentTyp
 
   const responseData = await response.json();
 
-  if (!response.ok) {
+  if (!response.ok || responseData?.ok === false || !responseData?.result) {
     if (apiEndpoint === "sendPhoto" || apiEndpoint === "sendAudio") {
       const docFormData = new FormData();
       docFormData.append("chat_id", env.TG_Chat_ID);
@@ -294,7 +294,7 @@ async function uploadToTelegram(arrayBuffer, fileName, fileExtension, contentTyp
       });
 
       const docData = await docResponse.json();
-      if (docResponse.ok) {
+      if (docResponse.ok && docData?.ok !== false && docData?.result) {
         return processTelegramSuccess(docData, fileName, fileExtension, contentType, fileSize, env, fallbackOrigin, folderPath);
       }
     }

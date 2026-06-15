@@ -28,6 +28,75 @@ describe('Telegram upload method selection', function () {
     );
   });
 
+  it('extracts document file ids when Telegram omits the ok field', async function () {
+    const { pickTelegramFileId } = await import('../functions/utils/telegram.js');
+
+    assert.strictEqual(
+      pickTelegramFileId({
+        result: {
+          message_id: 123,
+          document: { file_id: 'doc_without_ok' },
+        },
+      }),
+      'doc_without_ok'
+    );
+    assert.strictEqual(
+      pickTelegramFileId({
+        ok: false,
+        result: {
+          document: { file_id: 'should_not_use' },
+        },
+      }),
+      null
+    );
+  });
+
+  it('surfaces Telegram ok=false errors instead of reporting a missing file id', async function () {
+    const { onRequestPost } = await import('../functions/upload.js');
+    const originalFetch = global.fetch;
+    const originalConsoleError = console.error;
+    const requestedUrls = [];
+
+    global.fetch = async (url) => {
+      requestedUrls.push(String(url));
+      return new Response(JSON.stringify({
+        ok: false,
+        description: 'Bad Request: chat not found',
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    };
+    console.error = () => {};
+
+    try {
+      const formData = new FormData();
+      formData.append('file', new File([new Uint8Array([1, 2, 3])], 'transparent.png', { type: 'image/png' }));
+
+      const response = await onRequestPost({
+        request: new Request('https://example.com/upload', {
+          method: 'POST',
+          body: formData,
+        }),
+        env: {
+          disable_telemetry: 'true',
+          TG_Bot_Token: 'token',
+          TG_Chat_ID: 'chat',
+        },
+        data: {},
+        next: () => new Response('ok'),
+      });
+
+      const payload = await response.json();
+      assert.strictEqual(response.status, 500);
+      assert.strictEqual(payload.error, 'Bad Request: chat not found');
+      assert.deepStrictEqual(requestedUrls, ['https://api.telegram.org/bottoken/sendDocument']);
+    } finally {
+      global.fetch = originalFetch;
+      console.error = originalConsoleError;
+    }
+  });
+
   it('uses sendDocument for png uploads in the Docker storage adapter', async function () {
     const originalFetch = global.fetch;
     const requestedUrls = [];

@@ -1,4 +1,4 @@
-﻿import { errorHandling, telemetryData } from "./utils/middleware";
+﻿import { errorHandling, telemetryData } from "./utils/middleware.js";
 import { checkAuthentication, isAuthRequired } from "./utils/auth.js";
 import { checkGuestUpload, incrementGuestCount } from "./utils/guest.js";
 import { createS3Client } from "./utils/s3client.js";
@@ -279,7 +279,7 @@ async function sendToTelegram(formData, apiEndpoint, env, retryCount = 0) {
 
     const responseData = await response.json();
 
-    if (response.ok) {
+    if (response.ok && responseData?.ok !== false && responseData?.result) {
       return { success: true, data: responseData, messageId: responseData?.result?.message_id };
     }
 
