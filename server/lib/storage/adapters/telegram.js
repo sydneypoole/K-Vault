@@ -22,7 +22,9 @@ function buildFileUrl(config, filePath) {
 
 function pickUploadMethod(mimeType = '') {
   const type = String(mimeType).toLowerCase();
-  if (type.startsWith('image/')) return { method: 'sendPhoto', field: 'photo' };
+  if (type.startsWith('image/jpeg') || type.startsWith('image/jpg')) {
+    return { method: 'sendPhoto', field: 'photo' };
+  }
   if (type.startsWith('audio/')) return { method: 'sendAudio', field: 'audio' };
   if (type.startsWith('video/')) return { method: 'sendVideo', field: 'video' };
   return { method: 'sendDocument', field: 'document' };

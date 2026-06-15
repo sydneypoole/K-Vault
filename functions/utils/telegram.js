@@ -58,7 +58,7 @@ export function buildTelegramFileUrl(env, filePath) {
 
 export function getTelegramUploadMethodAndField(contentType = "") {
   const type = String(contentType || "").toLowerCase();
-  if (type.startsWith("image/")) {
+  if (type.startsWith("image/jpeg") || type.startsWith("image/jpg")) {
     return { method: "sendPhoto", field: "photo" };
   }
   if (type.startsWith("audio/")) {
