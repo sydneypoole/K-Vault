@@ -10,8 +10,11 @@ import {
   buildTelegramDirectLink,
   buildTelegramBotApiUrl,
   createSignedTelegramFileId,
+  getTelegramApiError,
   getTelegramUploadMethodAndField,
+  isTelegramUploadSuccess,
   pickTelegramFileId,
+  readTelegramApiResponse,
   sendTelegramUploadNotice,
   shouldUseSignedTelegramLinks,
   shouldWriteTelegramMetadata,
@@ -277,14 +280,14 @@ async function sendToTelegram(formData, apiEndpoint, env, retryCount = 0) {
       clearTimeout(timeout);
     }
 
-    const responseData = await response.json();
+    const responseData = await readTelegramApiResponse(response);
 
-    if (response.ok && responseData?.ok !== false && responseData?.result) {
+    if (isTelegramUploadSuccess(response, responseData)) {
       return { success: true, data: responseData, messageId: responseData?.result?.message_id };
     }
 
     if (response.status === 429) {
-      const retryAfter = responseData.parameters?.retry_after || 5;
+      const retryAfter = responseData?.parameters?.retry_after || 5;
       if (retryCount < maxRetries) {
         await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
         return sendToTelegram(formData, apiEndpoint, env, retryCount + 1);
@@ -306,7 +309,7 @@ async function sendToTelegram(formData, apiEndpoint, env, retryCount = 0) {
 
     return {
       success: false,
-      error: responseData.description || "Upload to Telegram failed",
+      error: getTelegramApiError(responseData, "Upload to Telegram failed"),
     };
   } catch (error) {
     if (error.name === "AbortError") {

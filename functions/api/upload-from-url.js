@@ -7,8 +7,11 @@ import {
   buildTelegramDirectLink,
   buildTelegramBotApiUrl,
   createSignedTelegramFileId,
+  getTelegramApiError,
   getTelegramUploadMethodAndField,
+  isTelegramUploadSuccess,
   pickTelegramFileId,
+  readTelegramApiResponse,
   sendTelegramUploadNotice,
   shouldUseSignedTelegramLinks,
   shouldWriteTelegramMetadata,
@@ -280,9 +283,9 @@ async function uploadToTelegram(arrayBuffer, fileName, fileExtension, contentTyp
     return jsonResponse({ error: `Telegram request failed: ${error.message}` }, 502);
   }
 
-  const responseData = await response.json();
+  const responseData = await readTelegramApiResponse(response);
 
-  if (!response.ok || responseData?.ok === false || !responseData?.result) {
+  if (!isTelegramUploadSuccess(response, responseData)) {
     if (apiEndpoint === "sendPhoto" || apiEndpoint === "sendAudio") {
       const docFormData = new FormData();
       docFormData.append("chat_id", env.TG_Chat_ID);
@@ -293,12 +296,12 @@ async function uploadToTelegram(arrayBuffer, fileName, fileExtension, contentTyp
         body: docFormData,
       });
 
-      const docData = await docResponse.json();
-      if (docResponse.ok && docData?.ok !== false && docData?.result) {
+      const docData = await readTelegramApiResponse(docResponse);
+      if (isTelegramUploadSuccess(docResponse, docData)) {
         return processTelegramSuccess(docData, fileName, fileExtension, contentType, fileSize, env, fallbackOrigin, folderPath);
       }
     }
-    return jsonResponse({ error: responseData.description || "Telegram upload failed" }, 500);
+    return jsonResponse({ error: getTelegramApiError(responseData, "Telegram upload failed") }, 500);
   }
 
   return processTelegramSuccess(responseData, fileName, fileExtension, contentType, fileSize, env, fallbackOrigin, folderPath);

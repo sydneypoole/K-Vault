@@ -89,6 +89,30 @@ export function pickTelegramFileId(responseData) {
   return null;
 }
 
+export async function readTelegramApiResponse(response) {
+  const text = await response.text().catch(() => "");
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {
+      ok: false,
+      description: text.slice(0, 500),
+    };
+  }
+}
+
+export function getTelegramApiError(data, fallback = "Telegram API request failed") {
+  const description = data?.description || data?.message || data?.error;
+  if (description) return String(description);
+  return fallback;
+}
+
+export function isTelegramUploadSuccess(response, data) {
+  return Boolean(response?.ok && data?.ok !== false && data?.result);
+}
+
 export function guessExtensionFromMimeType(mimeType, fallback = "bin") {
   const normalized = String(mimeType || "")
     .split(";")[0]

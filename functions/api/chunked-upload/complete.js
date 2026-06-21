@@ -12,8 +12,11 @@ import {
   buildTelegramDirectLink,
   buildTelegramBotApiUrl,
   createSignedTelegramFileId,
+  getTelegramApiError,
   getTelegramUploadMethodAndField,
+  isTelegramUploadSuccess,
   pickTelegramFileId,
+  readTelegramApiResponse,
   sendTelegramUploadNotice,
   shouldUseSignedTelegramLinks,
   shouldWriteTelegramMetadata,
@@ -338,9 +341,9 @@ async function uploadToTelegram(file, env) {
       method: 'POST',
       body: formData,
     });
-    const data = await response.json();
+    const data = await readTelegramApiResponse(response);
 
-    if (!response.ok || data?.ok === false || !data?.result) {
+    if (!isTelegramUploadSuccess(response, data)) {
       if (apiEndpoint === 'sendPhoto' || apiEndpoint === 'sendAudio') {
         const docFormData = new FormData();
         docFormData.append('chat_id', env.TG_Chat_ID);
@@ -350,8 +353,8 @@ async function uploadToTelegram(file, env) {
           method: 'POST',
           body: docFormData,
         });
-        const docData = await docResponse.json();
-        if (docResponse.ok && docData?.ok !== false && docData?.result) {
+        const docData = await readTelegramApiResponse(docResponse);
+        if (isTelegramUploadSuccess(docResponse, docData)) {
           const fileId = pickTelegramFileId(docData);
           if (!fileId) return { success: false, error: 'Failed to get Telegram file ID' };
           return {
@@ -361,7 +364,7 @@ async function uploadToTelegram(file, env) {
           };
         }
       }
-      return { success: false, error: data.description || 'Upload failed' };
+      return { success: false, error: getTelegramApiError(data, 'Upload failed') };
     }
 
     const fileId = pickTelegramFileId(data);

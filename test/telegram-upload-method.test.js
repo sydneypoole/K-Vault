@@ -97,6 +97,44 @@ describe('Telegram upload method selection', function () {
     }
   });
 
+  it('handles non-json Telegram errors without throwing a Worker exception', async function () {
+    const { onRequestPost } = await import('../functions/upload.js');
+    const originalFetch = global.fetch;
+    const originalConsoleError = console.error;
+
+    global.fetch = async () => new Response('error code: 1101', {
+      status: 500,
+      headers: { 'Content-Type': 'text/plain' },
+    });
+    console.error = () => {};
+
+    try {
+      const formData = new FormData();
+      formData.append('file', new File([new Uint8Array([1, 2, 3])], 'sample.png', { type: 'image/png' }));
+
+      const response = await onRequestPost({
+        request: new Request('https://example.com/upload', {
+          method: 'POST',
+          body: formData,
+        }),
+        env: {
+          disable_telemetry: 'true',
+          TG_Bot_Token: 'token',
+          TG_Chat_ID: 'chat',
+        },
+        data: {},
+        next: () => new Response('ok'),
+      });
+
+      const payload = await response.json();
+      assert.strictEqual(response.status, 500);
+      assert.match(payload.error, /error code: 1101/);
+    } finally {
+      global.fetch = originalFetch;
+      console.error = originalConsoleError;
+    }
+  });
+
   it('uses sendDocument for png uploads in the Docker storage adapter', async function () {
     const originalFetch = global.fetch;
     const requestedUrls = [];
