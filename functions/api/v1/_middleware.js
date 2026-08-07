@@ -32,14 +32,6 @@ export async function onRequest(context) {
     return context.next();
   }
 
-  if (!context.env?.img_url) {
-    return apiError(
-      'SERVER_MISCONFIGURED',
-      'KV binding img_url is not configured.',
-      500
-    );
-  }
-
   const requiredScope = resolveRequiredScope(context.request);
   if (!requiredScope) {
     return context.next();
@@ -58,6 +50,10 @@ export async function onRequest(context) {
 
   context.data = context.data || {};
   context.data.apiToken = verifyResult.token;
+
+  if (verifyResult.source === 'static' || verifyResult.token?.source === 'static') {
+    return context.next();
+  }
 
   const touchPromise = touchApiTokenLastUsed(verifyResult.token.id, context.env).catch((error) => {
     console.warn('Failed to update API token lastUsedAt:', error?.message || error);

@@ -4,6 +4,10 @@ import { apiError, apiSuccess } from '../utils/api-v1.js';
 const UI_CONFIG_KEY = 'ui_config';
 const KV_BINDING_CANDIDATES = ['img_url', 'KV', 'UI_CONFIG_KV'];
 const EFFECT_STYLES = new Set(['none', 'math', 'particle', 'texture']);
+const UI_CONFIG_CACHE_TTL_MS = 5 * 60 * 1000;
+const UI_CONFIG_CACHE_HEADERS = {
+  'Cache-Control': 'public, max-age=300, stale-while-revalidate=3600',
+};
 
 const DEFAULT_UI_CONFIG = {
   version: 1,
@@ -17,6 +21,8 @@ const DEFAULT_UI_CONFIG = {
   effectIntensity: 22,
   optimizeMobile: true,
 };
+
+let memoryCache = null;
 
 function clampNumber(value, min, max) {
   const numeric = Number(value);
@@ -88,6 +94,26 @@ function resolveKvBinding(env = {}) {
   return null;
 }
 
+function getFreshMemoryCache(bindingName) {
+  if (!memoryCache || memoryCache.binding !== bindingName) return null;
+  if (Date.now() - memoryCache.cachedAt > UI_CONFIG_CACHE_TTL_MS) return null;
+  return memoryCache;
+}
+
+function setMemoryCache(bindingName, config, source) {
+  memoryCache = {
+    binding: bindingName,
+    config: normalizeUiConfig(config),
+    source,
+    cachedAt: Date.now(),
+  };
+  return memoryCache;
+}
+
+function uiConfigSuccess(payload, status = 200) {
+  return apiSuccess(payload, status, UI_CONFIG_CACHE_HEADERS);
+}
+
 function missingKvBindingResponse() {
   return apiError(
     'KV_BINDING_MISSING',
@@ -108,24 +134,41 @@ export async function onRequestGet(context) {
     return missingKvBindingResponse();
   }
 
+  const cached = getFreshMemoryCache(kv.name);
+  if (cached) {
+    return uiConfigSuccess({
+      config: cached.config,
+      source: cached.source === 'kv' ? 'memory' : cached.source,
+      binding: kv.name,
+    });
+  }
+
   let saved = null;
   try {
     saved = await kv.binding.get(UI_CONFIG_KEY, { type: 'json' });
   } catch (error) {
+    const detail = error?.message || String(error);
     console.error('[ui-config] Failed to read config from KV:', {
       binding: kv.name,
-      error: error?.message || String(error),
+      error: detail,
     });
-    return apiError(
-      'KV_READ_FAILED',
-      '读取 UI 配置失败，请检查 KV 绑定与 Functions 日志。',
-      500,
-      { binding: kv.name, detail: error?.message || String(error) }
-    );
+    const staleCache = memoryCache?.binding === kv.name ? memoryCache : null;
+    const fallback = staleCache?.config || DEFAULT_UI_CONFIG;
+    return uiConfigSuccess({
+      config: normalizeUiConfig(fallback),
+      source: staleCache ? 'memory-stale' : 'default',
+      binding: kv.name,
+      warning: {
+        code: 'KV_READ_FAILED',
+        message: '读取 UI 配置失败，已使用缓存或默认配置。',
+        detail,
+      },
+    });
   }
 
   const config = normalizeUiConfig(saved || DEFAULT_UI_CONFIG);
-  return apiSuccess({
+  setMemoryCache(kv.name, config, saved ? 'kv' : 'default');
+  return uiConfigSuccess({
     config,
     source: saved ? 'kv' : 'default',
     binding: kv.name,
@@ -170,6 +213,7 @@ export async function onRequestPost(context) {
     );
   }
 
+  setMemoryCache(kv.name, config, 'kv');
   return apiSuccess({
     config,
     source: 'kv',

@@ -1,6 +1,7 @@
 const TOKEN_PREFIX = 'kvault_';
 const TOKEN_KEY_PREFIX = 'api_token:';
 const VALID_SCOPES = new Set(['upload', 'read', 'delete', 'paste']);
+const STATIC_TOKEN_ID = 'static';
 const TOKEN_ID_LENGTH = 12;
 const TOKEN_SECRET_LENGTH = 40;
 const TOKEN_SALT_LENGTH = 16;
@@ -73,6 +74,14 @@ function normalizeScopes(rawScopes = []) {
   return normalized;
 }
 
+function normalizeStaticScopes(rawScopes) {
+  const text = String(rawScopes || '').trim();
+  if (!text || text === '*' || text.toLowerCase() === 'all') {
+    return [...VALID_SCOPES];
+  }
+  return normalizeScopes(text.split(/[\s,]+/));
+}
+
 async function sha256Hex(input) {
   const bytes = new TextEncoder().encode(String(input || ''));
   const digest = await crypto.subtle.digest('SHA-256', bytes);
@@ -94,6 +103,48 @@ function ensureKvBinding(env) {
   if (!env?.img_url) {
     throw new Error('KV binding img_url is not configured.');
   }
+}
+
+function getStaticApiToken(env) {
+  return String(env?.STATIC_API_TOKEN || env?.FIXED_API_TOKEN || '').trim();
+}
+
+function verifyStaticApiToken(tokenValue, env, requiredScope = '') {
+  const staticToken = getStaticApiToken(env);
+  if (!staticToken) return null;
+
+  const normalizedToken = String(tokenValue || '').trim();
+  if (!normalizedToken || !timingSafeEqual(normalizedToken, staticToken)) {
+    return null;
+  }
+
+  const scopes = normalizeStaticScopes(env?.STATIC_API_TOKEN_SCOPES);
+  const normalizedScope = String(requiredScope || '').trim().toLowerCase();
+  if (normalizedScope && !scopes.includes(normalizedScope)) {
+    return {
+      ok: false,
+      status: 403,
+      code: 'TOKEN_SCOPE_DENIED',
+      message: `Static API Token does not include "${normalizedScope}" scope.`,
+      source: 'static',
+    };
+  }
+
+  return {
+    ok: true,
+    source: 'static',
+    token: {
+      id: STATIC_TOKEN_ID,
+      name: 'Static API Token',
+      scopes,
+      expiresAt: null,
+      createdAt: 0,
+      lastUsedAt: null,
+      enabled: true,
+      tokenPreview: maskTokenSuffix(staticToken.slice(-6)),
+      source: 'static',
+    },
+  };
 }
 
 function toPublicRecord(record = {}) {
@@ -280,6 +331,11 @@ export async function touchApiTokenLastUsed(tokenId, env) {
 }
 
 export async function verifyApiToken(tokenValue, env, requiredScope = '') {
+  const staticResult = verifyStaticApiToken(tokenValue, env, requiredScope);
+  if (staticResult) {
+    return staticResult;
+  }
+
   const split = splitToken(tokenValue);
   if (!split) {
     return {
@@ -287,6 +343,15 @@ export async function verifyApiToken(tokenValue, env, requiredScope = '') {
       status: 401,
       code: 'TOKEN_INVALID',
       message: 'API Token is invalid.',
+    };
+  }
+
+  if (!env?.img_url) {
+    return {
+      ok: false,
+      status: 500,
+      code: 'SERVER_MISCONFIGURED',
+      message: 'KV binding img_url is not configured.',
     };
   }
 

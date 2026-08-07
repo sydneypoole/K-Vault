@@ -235,6 +235,60 @@ describe('API v1 middleware auth', function () {
     const tokenRecord = await env.img_url.get(`api_token:${tokenInfo.id}`, { type: 'json' });
     assert.ok(Number(tokenRecord?.lastUsedAt || 0) > 0);
   });
+
+  it('allows static API token without reading or writing KV', async function () {
+    const { onRequest: middleware } = await import('../functions/api/v1/_middleware.js');
+    const request = new Request('https://example.com/api/v1/upload', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer fixed-token-for-ci' },
+    });
+
+    let nextCalled = false;
+    let waitUntilCalled = false;
+    const response = await middleware({
+      request,
+      env: {
+        STATIC_API_TOKEN: 'fixed-token-for-ci',
+        STATIC_API_TOKEN_SCOPES: 'upload,read',
+      },
+      data: {},
+      next: () => {
+        nextCalled = true;
+        return new Response('ok', { status: 200 });
+      },
+      waitUntil: () => {
+        waitUntilCalled = true;
+      },
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(nextCalled, true);
+    assert.strictEqual(waitUntilCalled, false);
+  });
+
+  it('rejects static API token without the required scope', async function () {
+    const { onRequest: middleware } = await import('../functions/api/v1/_middleware.js');
+    const request = new Request('https://example.com/api/v1/file/example.png', {
+      method: 'DELETE',
+      headers: { Authorization: 'Bearer scoped-static-token' },
+    });
+
+    const response = await middleware({
+      request,
+      env: {
+        STATIC_API_TOKEN: 'scoped-static-token',
+        STATIC_API_TOKEN_SCOPES: 'upload,read',
+      },
+      data: {},
+      next: () => new Response('ok', { status: 200 }),
+      waitUntil: () => {},
+    });
+
+    const payload = await parseJson(response);
+    assert.strictEqual(response.status, 403);
+    assert.strictEqual(payload.success, false);
+    assert.strictEqual(payload.error.code, 'TOKEN_SCOPE_DENIED');
+  });
 });
 
 describe('API v1 file share limits', function () {

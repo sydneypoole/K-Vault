@@ -170,6 +170,8 @@
   var LEGACY_LOGIN_MODE_KEY = "loginBackgroundMode";
   var LEGACY_LOGIN_URL_KEY = "loginBackgroundUrl";
   var API_ENDPOINT = "/api/ui-config";
+  var SYNC_ATTEMPT_KEY = "kvUiDesignSettingsLastFetchAt";
+  var SYNC_TTL_MS = 5 * 60 * 1000;
   var EFFECT_STYLES = { none: true, math: true, particle: true, texture: true };
 
   var DEFAULTS = {
@@ -262,6 +264,27 @@
     } catch (e) {}
   }
 
+  function readSyncAttemptAt() {
+    try {
+      var raw = localStorage.getItem(SYNC_ATTEMPT_KEY);
+      var value = Number(raw || 0);
+      return isFinite(value) ? value : 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function markSyncAttempt() {
+    try {
+      localStorage.setItem(SYNC_ATTEMPT_KEY, String(Date.now()));
+    } catch (e) {}
+  }
+
+  function isSyncFresh() {
+    var lastAttemptAt = readSyncAttemptAt();
+    return lastAttemptAt > 0 && Date.now() - lastAttemptAt < SYNC_TTL_MS;
+  }
+
   function readSettings() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
@@ -313,26 +336,32 @@
     return fallback;
   }
 
-  function requestUiConfig(method, config) {
+  function requestUiConfig(method, config, options) {
     if (typeof fetch !== "function") {
       return Promise.reject(new Error("Fetch API is not available"));
     }
 
-    var url =
-      method === "GET"
-        ? API_ENDPOINT + (API_ENDPOINT.indexOf("?") >= 0 ? "&" : "?") + "_ts=" + Date.now()
-        : API_ENDPOINT;
+    var opts = options || {};
+    var url = API_ENDPOINT;
+    if (method === "GET" && opts.bustCache) {
+      url += (url.indexOf("?") >= 0 ? "&" : "?") + "_ts=" + Date.now();
+    }
 
     var init = {
       method: method,
       credentials: "include",
-      cache: "no-store",
       headers: {
         Accept: "application/json",
       },
     };
 
+    if (method === "GET" && opts.bustCache) {
+      init.cache = "reload";
+      init.headers["Cache-Control"] = "no-cache";
+    }
+
     if (method !== "GET" && config) {
+      init.cache = "no-store";
       init.headers["Content-Type"] = "application/json";
       init.body = JSON.stringify({ config: config });
     }
@@ -372,8 +401,19 @@
     var opts = options || {};
     var silent = opts.silent !== false;
     var applyLocalOnFailure = opts.applyLocalOnFailure === true;
+    var force = opts.force === true;
 
-    return requestUiConfig("GET")
+    if (!force && isSyncFresh()) {
+      return Promise.resolve({
+        success: true,
+        source: "cache",
+        settings: cloneSettings(settings || readSettings()),
+      });
+    }
+
+    markSyncAttempt();
+
+    return requestUiConfig("GET", null, { bustCache: force })
       .then(function (payload) {
         var remote = extractConfigPayload(payload);
         if (!remote) {
@@ -387,6 +427,7 @@
 
         var normalized = normalizeSettings(remote);
         saveLocalSettings(normalized);
+        markSyncAttempt();
         applySettings(normalized, { persist: false, silent: silent });
         return {
           success: true,
@@ -432,7 +473,7 @@
         var binding = payload && payload.binding ? String(payload.binding) : "";
         saveLocalSettings(normalized);
         applySettings(normalized, { persist: false, silent: !!opts.silent });
-        return requestUiConfig("GET")
+        return requestUiConfig("GET", null, { bustCache: true })
           .then(function (verifyPayload) {
             var verifyRemote = extractConfigPayload(verifyPayload);
             if (!verifyRemote) {
@@ -440,6 +481,7 @@
             }
             var verified = normalizeSettings(verifyRemote);
             saveLocalSettings(verified);
+            markSyncAttempt();
             applySettings(verified, { persist: false, silent: !!opts.silent });
 
             var isMatch = JSON.stringify(verified) === JSON.stringify(normalized);

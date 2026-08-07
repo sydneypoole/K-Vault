@@ -3834,9 +3834,7 @@
         }
 
         const requestUiConfigDirect = async (method, config) => {
-          const url = method === 'GET'
-            ? `/api/ui-config?_ts=${Date.now()}`
-            : '/api/ui-config';
+          const url = '/api/ui-config';
           const init = {
             method,
             credentials: 'include',

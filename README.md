@@ -504,6 +504,8 @@ curl -X POST "http://127.0.0.1:8081/bot<YOUR_BOT_TOKEN>/setWebhook" \
 | `TELEGRAM_METADATA_MODE` | Telegram 元数据写入策略（`off` 关闭后台索引写入） | `on` |
 | `TG_UPLOAD_NOTIFY` | 网页上传成功后发送“直链+File ID”通知消息 | `true` |
 | `FILE_URL_SECRET` | 签名直链密钥（也兼容 `TG_FILE_URL_SECRET`） | `TG_Bot_Token` |
+| `STATIC_API_TOKEN` | 固定 API Token；命中后不读取/写入 KV 中的 `api_token:` 记录 | - |
+| `STATIC_API_TOKEN_SCOPES` | 固定 API Token 权限，逗号分隔；留空为全部权限，也支持 `all` | `upload,read,delete,paste` |
 | `CHUNK_BACKEND` | 分片临时存储后端（`auto`/`r2`/`kv`） | `auto` |
 | `disable_telemetry` | 禁用遥测 | - |
 
@@ -556,7 +558,7 @@ curl -X POST "http://127.0.0.1:8081/bot<YOUR_BOT_TOKEN>/setWebhook" \
 
 | 存储后端 | 单文件最大大小 |
 | :--- | :--- |
-| Telegram（网页直传） | 小文件直传 20MB；分片流程当前上限 100MB |
+| Telegram（网页直传） | 20MB；网页端不走分片，大文件建议使用 Telegram 客户端 + Webhook 回链 |
 | Telegram（自部署 Bot API + Telegram 客户端 + Webhook） | 受 Bot API 与部署环境影响，常见可达 2GB |
 | Cloudflare R2 | 100MB（分片上传） |
 | S3 兼容存储 | 100MB（分片上传） |
@@ -644,6 +646,13 @@ curl -X POST "http://127.0.0.1:8081/bot<YOUR_BOT_TOKEN>/setWebhook" \
 1. 打开管理面板 `/admin.html`
 2. 点击工具箱菜单中的 **API Token 管理**
 3. 创建 Token 时按需选择权限：`upload` / `read` / `delete` / `paste`，并设置过期时间
+
+也可以通过环境变量配置固定 Token，适合高频脚本调用，命中后不会读写 KV：
+
+```env
+STATIC_API_TOKEN=replace-with-a-long-random-token
+STATIC_API_TOKEN_SCOPES=upload,read,delete,paste
+```
 
 ### 2. 常用示例
 

@@ -6,6 +6,34 @@
 const SESSION_COOKIE_NAME = 'k_vault_session';
 const LEGACY_SESSION_COOKIE_NAME = 'katelya_session';
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24小时
+const SESSION_CACHE_TTL_MS = 30 * 1000;
+const SESSION_CACHE_MAX = 1000;
+
+const sessionCache = new Map();
+
+function getCachedSession(token) {
+  const cached = sessionCache.get(token);
+  if (!cached) return null;
+  if (Date.now() > cached.expiresAt) {
+    sessionCache.delete(token);
+    return null;
+  }
+  return cached;
+}
+
+function setCachedSession(token, sessionData) {
+  const sessionExpiresAt = Number(sessionData?.expiresAt || 0);
+  if (!token || !Number.isFinite(sessionExpiresAt) || sessionExpiresAt <= Date.now()) return;
+
+  if (sessionCache.size >= SESSION_CACHE_MAX) {
+    const oldestKey = sessionCache.keys().next().value;
+    if (oldestKey) sessionCache.delete(oldestKey);
+  }
+
+  sessionCache.set(token, {
+    expiresAt: Math.min(sessionExpiresAt, Date.now() + SESSION_CACHE_TTL_MS),
+  });
+}
 
 /**
  * 生成会话令牌
@@ -67,6 +95,10 @@ export function getSessionFromCookie(request) {
  */
 export async function verifySession(sessionToken, env) {
   if (!sessionToken || !env.img_url) return false;
+
+  if (getCachedSession(sessionToken)) {
+    return true;
+  }
   
   try {
     const sessionData = await env.img_url.get(`session:${sessionToken}`, { type: 'json' });
@@ -75,9 +107,11 @@ export async function verifySession(sessionToken, env) {
     // 检查会话是否过期
     if (Date.now() > sessionData.expiresAt) {
       await env.img_url.delete(`session:${sessionToken}`);
+      sessionCache.delete(sessionToken);
       return false;
     }
-    
+
+    setCachedSession(sessionToken, sessionData);
     return true;
   } catch (e) {
     console.error('Session verify error:', e);
@@ -107,6 +141,9 @@ export async function createSession(user, env) {
  * 删除会话
  */
 export async function deleteSession(sessionToken, env) {
+  if (sessionToken) {
+    sessionCache.delete(sessionToken);
+  }
   if (sessionToken && env.img_url) {
     await env.img_url.delete(`session:${sessionToken}`);
   }

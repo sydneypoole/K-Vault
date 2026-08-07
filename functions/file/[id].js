@@ -10,7 +10,8 @@ import {
   shouldWriteTelegramMetadata,
 } from '../utils/telegram.js';
 
-const STORAGE_PREFIXES = ['img:', 'vid:', 'aud:', 'doc:', 'r2:', 's3:', 'discord:', 'hf:', 'webdav:', 'github:', ''];
+const STORAGE_PREFIXES = ['', 'img:', 'vid:', 'aud:', 'doc:', 'r2:', 's3:', 'discord:', 'hf:', 'webdav:', 'github:'];
+const FILE_CACHE_CONTROL = 'public, max-age=600, s-maxage=600, stale-while-revalidate=3600';
 
 const MIME_TYPES = {
   mp4: 'video/mp4',
@@ -152,15 +153,40 @@ function addCorsHeaders(headers) {
   headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
   headers.set('Access-Control-Allow-Headers', 'Range, Content-Type, Accept, Origin');
   headers.set('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges, Content-Type, Content-Disposition');
-  headers.set('CDN-Cache-Control', 'no-store');
   return headers;
 }
 
-function addResponseHeaders(headers, fileName, mimeType, upstream = null) {
+function setFileCacheHeaders(headers, cacheable) {
+  if (cacheable) {
+    headers.set('Cache-Control', FILE_CACHE_CONTROL);
+    headers.set('CDN-Cache-Control', FILE_CACHE_CONTROL);
+    return;
+  }
+  headers.set('Cache-Control', 'no-store, max-age=0');
+  headers.set('CDN-Cache-Control', 'no-store');
+}
+
+function hasAccessControls(metadata = {}) {
+  return Boolean(
+    metadata.sharePasswordHash ||
+    Number(metadata.shareExpiresAt || 0) > 0 ||
+    Number(metadata.shareMaxDownloads || 0) > 0
+  );
+}
+
+function isCacheableFileRequest(context, metadata = {}) {
+  const method = String(context?.request?.method || '').toUpperCase();
+  if (method !== 'GET' && method !== 'HEAD') return false;
+  if (context?.request?.headers?.get('Range')) return false;
+  if (context?.env?.WhiteList_Mode === 'true') return false;
+  return !hasAccessControls(metadata);
+}
+
+function addResponseHeaders(headers, fileName, mimeType, upstream = null, options = {}) {
   addCorsHeaders(headers);
   headers.set('Content-Type', mimeType || 'application/octet-stream');
-  headers.set('Cache-Control', 'no-store, max-age=0');
   headers.set('Accept-Ranges', 'bytes');
+  setFileCacheHeaders(headers, options.cacheable !== false);
 
   if (fileName) {
     const encoded = encodeURIComponent(fileName);
@@ -186,6 +212,7 @@ function errorResponse(message, status = 500) {
   const headers = new Headers();
   addCorsHeaders(headers);
   headers.set('Cache-Control', 'no-store, max-age=0');
+  headers.set('CDN-Cache-Control', 'no-store');
   return new Response(message, { status, headers });
 }
 
@@ -335,7 +362,9 @@ async function handleTelegramFile(context, fileId, record = null) {
   }
 
   const headers = new Headers();
-  addResponseHeaders(headers, fileName, mimeType, upstream);
+  addResponseHeaders(headers, fileName, mimeType, upstream, {
+    cacheable: isCacheableFileRequest(context, metadata),
+  });
 
   return new Response(upstream.body, {
     status: upstream.status,
@@ -372,7 +401,9 @@ async function handleSignedTelegramFile(context, signedMeta) {
   }
 
   const headers = new Headers();
-  addResponseHeaders(headers, fileName, mimeType, upstream);
+  addResponseHeaders(headers, fileName, mimeType, upstream, {
+    cacheable: isCacheableFileRequest(context),
+  });
 
   return new Response(upstream.body, {
     status: upstream.status,
@@ -473,7 +504,9 @@ async function handleR2File(context, r2Key, record = null) {
   }
 
   const headers = new Headers();
-  addResponseHeaders(headers, fileName, mimeType);
+  addResponseHeaders(headers, fileName, mimeType, null, {
+    cacheable: isCacheableFileRequest(context, record.metadata),
+  });
   headers.set('Content-Length', String(object.size));
 
   return new Response(object.body, {
@@ -533,7 +566,9 @@ async function handleS3File(context, fileId, record = null) {
   if (!upstream) return errorResponse('File not found in S3', 404);
 
   const headers = new Headers();
-  addResponseHeaders(headers, fileName, mimeType, upstream);
+  addResponseHeaders(headers, fileName, mimeType, upstream, {
+    cacheable: isCacheableFileRequest(context, record.metadata),
+  });
 
   return new Response(upstream.body, {
     status: upstream.status,
@@ -578,7 +613,9 @@ async function handleDiscordFile(context, fileId, record = null) {
   const mimeType = getMimeType(fileName);
 
   const headers = new Headers();
-  addResponseHeaders(headers, fileName, mimeType, upstream);
+  addResponseHeaders(headers, fileName, mimeType, upstream, {
+    cacheable: isCacheableFileRequest(context, record.metadata),
+  });
 
   return new Response(upstream.body, {
     status: upstream.status,
@@ -616,7 +653,9 @@ async function handleHFFile(context, fileId, record = null) {
   const mimeType = getMimeType(fileName);
 
   const headers = new Headers();
-  addResponseHeaders(headers, fileName, mimeType, upstream);
+  addResponseHeaders(headers, fileName, mimeType, upstream, {
+    cacheable: isCacheableFileRequest(context, record.metadata),
+  });
 
   return new Response(upstream.body, {
     status: upstream.status,
@@ -651,7 +690,9 @@ async function handleWebDAVFile(context, fileId, record = null) {
   const mimeType = getMimeType(fileName);
 
   const headers = new Headers();
-  addResponseHeaders(headers, fileName, mimeType, upstream);
+  addResponseHeaders(headers, fileName, mimeType, upstream, {
+    cacheable: isCacheableFileRequest(context, record.metadata),
+  });
 
   return new Response(upstream.body, {
     status: upstream.status,
@@ -690,7 +731,9 @@ async function handleGitHubFile(context, fileId, record = null) {
   const mimeType = getMimeType(fileName);
 
   const headers = new Headers();
-  addResponseHeaders(headers, fileName, mimeType, upstream);
+  addResponseHeaders(headers, fileName, mimeType, upstream, {
+    cacheable: isCacheableFileRequest(context, record.metadata),
+  });
 
   return new Response(upstream.body, {
     status: upstream.status,
@@ -701,8 +744,8 @@ async function handleGitHubFile(context, fileId, record = null) {
 async function findRecordByPrefixes(env, fileId, prefixes = []) {
   if (!env.img_url) return null;
 
-  for (const prefix of prefixes) {
-    const key = `${prefix}${fileId}`;
+  const candidateKeys = [...new Set([fileId, ...prefixes.map((prefix) => `${prefix}${fileId}`)])];
+  for (const key of candidateKeys) {
     const record = await env.img_url.getWithMetadata(key);
     if (record?.metadata) return record;
   }

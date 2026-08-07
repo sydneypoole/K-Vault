@@ -2159,7 +2159,7 @@
               formatSize(guestUploadConfig.maxFileSize) }}</span
             >
             <span v-else style="color: var(--text-muted); font-size: 0.85em"
-              >支持批量上传，最大 100MB/个（分片上传）</span
+              >Telegram 最大 20MB/个；其他存储最大 100MB/个</span
             >
           </div>
 
@@ -2179,7 +2179,7 @@
               }}，不支持分片上传
             </div>
             <div class="upload-hint" v-else>
-              支持图片、视频、音频、文档等多种格式，单文件最大 100MB
+              支持图片、视频、音频、文档等多种格式；Telegram 大文件建议使用 Webhook 回链或切换其他存储
             </div>
             <input
               type="file"
@@ -3802,10 +3802,20 @@
               await this.prepareUploadItem(item);
               item.status = "uploading";
               item.progress = 0;
+              const storageMode = this.getItemStorageMode(item);
+              if (
+                storageMode === "telegram" &&
+                item.file.size > this.uploadConfig.smallFileThreshold
+              ) {
+                throw new Error(
+                  `Telegram 网页上传暂不支持分片，单文件最大 ${this.formatSize(this.uploadConfig.smallFileThreshold)}。大文件请切换 R2/S3/WebDAV/HuggingFace/GitHub，或通过 Telegram 客户端 + Webhook 回链。`,
+                );
+              }
               // 访客模式禁止分片上传；压缩后重新计算最终文件大小。
               item.isChunked = this.isGuest
                 ? false
-                : item.file.size > this.uploadConfig.smallFileThreshold;
+                : storageMode !== "telegram" &&
+                  item.file.size > this.uploadConfig.smallFileThreshold;
               // 根据文件大小决定使用普通上传还是分片上传
               if (item.isChunked) {
                 await this.chunkedUpload(item);

@@ -45,6 +45,15 @@ export async function onRequestPost(context) {
 
     const validModes = ['telegram', 'r2', 's3', 'discord', 'huggingface', 'webdav', 'github'];
     const normalizedStorage = validModes.includes(storageMode) ? storageMode : 'telegram';
+    if (normalizedStorage === 'telegram') {
+      return jsonResponse(
+        {
+          error:
+            'Telegram 网页上传暂不支持分片。请选择 R2/S3/WebDAV/HuggingFace/GitHub，或通过 Telegram 客户端 + Webhook 回链上传大文件。',
+        },
+        400
+      );
+    }
 
     const chunkBackend = resolveChunkBackend(env);
 

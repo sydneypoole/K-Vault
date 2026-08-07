@@ -651,6 +651,7 @@ function createApp() {
 
   app.get('/api/ui-config', async (c) => {
     const config = await readUiConfig();
+    c.header('Cache-Control', 'public, max-age=300, stale-while-revalidate=3600');
     return c.json({
       success: true,
       config,
