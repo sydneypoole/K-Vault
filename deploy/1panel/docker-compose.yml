@@ -1,0 +1,139 @@
+services:
+  api:
+    image: ghcr.io/${GHCR_OWNER:-sydneypoole}/k-vault-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "8787"
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?set PUBLIC_BASE_URL}
+      BASIC_USER: ${BASIC_USER:-admin}
+      BASIC_PASS: ${BASIC_PASS:?set BASIC_PASS}
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-k_vault_session}
+      SESSION_DURATION_MS: ${SESSION_DURATION_MS:-86400000}
+      CONFIG_ENCRYPTION_KEY: ${CONFIG_ENCRYPTION_KEY:?set CONFIG_ENCRYPTION_KEY}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
+      FILE_URL_SECRET: ${FILE_URL_SECRET:-${CONFIG_ENCRYPTION_KEY}}
+      DATA_DIR: /app/data
+      DB_PATH: /app/data/k-vault.db
+      CHUNK_DIR: /app/data/chunks
+      SETTINGS_STORE: sqlite
+      DEFAULT_STORAGE_TYPE: telegram
+      TG_BOT_TOKEN: ${TG_BOT_TOKEN:?set TG_BOT_TOKEN}
+      TG_CHAT_ID: ${TG_CHAT_ID:?set TG_CHAT_ID}
+      CUSTOM_BOT_API_URL: http://tg-api-proxy
+      TG_WEBHOOK_SECRET: ${TG_WEBHOOK_SECRET:?set TG_WEBHOOK_SECRET}
+      TELEGRAM_LINK_MODE: ${TELEGRAM_LINK_MODE:-signed}
+      TELEGRAM_METADATA_MODE: ${TELEGRAM_METADATA_MODE:-on}
+      TG_UPLOAD_NOTIFY: ${TG_UPLOAD_NOTIFY:-true}
+      GUEST_UPLOAD: ${GUEST_UPLOAD:-false}
+      GUEST_MAX_FILE_SIZE: ${GUEST_MAX_FILE_SIZE:-5242880}
+      GUEST_DAILY_LIMIT: ${GUEST_DAILY_LIMIT:-10}
+      UPLOAD_MAX_SIZE: ${UPLOAD_MAX_SIZE:-104857600}
+      UPLOAD_SMALL_FILE_THRESHOLD: ${UPLOAD_SMALL_FILE_THRESHOLD:-20971520}
+      CHUNK_SIZE: ${CHUNK_SIZE:-5242880}
+    volumes:
+      - kvault_data:/app/data
+    depends_on:
+      tg-api-proxy:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8787/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - kvault
+    logging: &default-logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  web:
+    image: ghcr.io/${GHCR_OWNER:-sydneypoole}/k-vault-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    networks:
+      - kvault
+    logging: *default-logging
+
+  telegram-bot-api:
+    image: aiogram/telegram-bot-api:${TELEGRAM_BOT_API_TAG:-10.2}
+    restart: unless-stopped
+    environment:
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID:?set TELEGRAM_API_ID}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:?set TELEGRAM_API_HASH}
+      TELEGRAM_LOCAL: "1"
+      TELEGRAM_VERBOSITY: ${TELEGRAM_VERBOSITY:-2}
+    volumes:
+      - telegram_bot_api_data:/var/lib/telegram-bot-api
+    expose:
+      - "8081"
+    networks:
+      - kvault
+    logging: *default-logging
+
+  tg-api-proxy:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on:
+      - telegram-bot-api
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        cat > /etc/nginx/conf.d/default.conf <<'NGINX'
+        upstream telegram_api {
+          server telegram-bot-api:8081;
+        }
+
+        server {
+          listen 80;
+          server_name _;
+          client_max_body_size 2048m;
+          proxy_connect_timeout 600s;
+          proxy_send_timeout 600s;
+          proxy_read_timeout 600s;
+          send_timeout 600s;
+
+          location ~ ^/file/bot[^/]+/var/lib/telegram-bot-api/(.*)$$ {
+            alias /var/lib/telegram-bot-api/$$1;
+            add_header Accept-Ranges bytes;
+          }
+
+          location / {
+            proxy_pass http://telegram_api;
+            proxy_http_version 1.1;
+            proxy_request_buffering off;
+            proxy_buffering off;
+            proxy_set_header Host $$host;
+            proxy_set_header X-Real-IP $$remote_addr;
+            proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+          }
+        }
+        NGINX
+        exec nginx -g 'daemon off;'
+    volumes:
+      - telegram_bot_api_data:/var/lib/telegram-bot-api:ro
+    ports:
+      - "127.0.0.1:${TG_API_LOCAL_PORT:-8081}:80"
+    networks:
+      - kvault
+    logging: *default-logging
+
+networks:
+  kvault:
+    driver: bridge
+
+volumes:
+  kvault_data:
+  telegram_bot_api_data:
